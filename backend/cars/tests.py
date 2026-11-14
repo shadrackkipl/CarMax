@@ -1,0 +1,138 @@
+from io import BytesIO
+from tempfile import TemporaryDirectory
+
+from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase
+from django.test import override_settings
+from PIL import Image
+from rest_framework.test import APIClient
+from .models import Car, Inquiry, ServiceBooking
+
+
+class CarApiTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.car_data = {
+            'make': 'Toyota',
+            'model_name': 'Corolla',
+            'year': 2022,
+            'stock_number': 'MM-0001',
+            'price': '18500.00',
+            'mileage': 24000,
+            'engine_capacity': 1800,
+            'drivetrain': '2WD',
+            'description': 'Well maintained vehicle',
+            'transmission': 'Automatic',
+            'fuel_type': 'Petrol',
+            'is_available': True,
+        }
+
+    def test_add_car_creates_inventory_record(self):
+        image = BytesIO()
+        Image.new('RGB', (1, 1), color='white').save(image, format='JPEG')
+        image.seek(0)
+        upload = SimpleUploadedFile(
+            'vehicle.jpg', image.read(), content_type='image/jpeg'
+        )
+
+        with TemporaryDirectory() as media_root, override_settings(
+            MEDIA_ROOT=media_root
+        ):
+            self.client.force_authenticate(
+                user=get_user_model().objects.create_user(
+                    username='inventory-admin'
+                )
+            )
+            response = self.client.post(
+                '/api/cars/add/',
+                {**self.car_data, 'description': '', 'image': upload},
+                format='multipart',
+            )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(Car.objects.count(), 1)
+        self.assertEqual(response.data['data']['model_name'], 'Corolla')
+        self.assertEqual(response.data['data']['stock_number'], 'MM-0001')
+        self.assertEqual(response.data['data']['engine_capacity'], 1800)
+        self.assertEqual(response.data['data']['drivetrain'], '2WD')
+        self.assertIn('/media/cars/vehicle', response.data['data']['image'])
+
+    def test_car_listing_returns_available_vehicles(self):
+        available_car = Car.objects.create(**self.car_data)
+        hidden_car = Car.objects.create(
+            **{
+                **self.car_data,
+                'model_name': 'Yaris',
+                'stock_number': 'MM-0002',
+                'is_available': False,
+            }
+        )
+
+        response = self.client.get('/api/cars/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([car['id'] for car in response.data], [available_car.id])
+        self.assertNotIn(hidden_car.id, [car['id'] for car in response.data])
+
+    def test_public_inquiry_endpoint_accepts_customer_request(self):
+        car = Car.objects.create(**self.car_data)
+
+        response = self.client.post(
+            '/api/inquiries/',
+            {
+                'car': car.id,
+                'name': 'Customer',
+                'phone': '0712345678',
+                'email': '',
+                'message': 'Is this vehicle still available?',
+                'website': '',
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(Inquiry.objects.count(), 1)
+        self.assertEqual(Inquiry.objects.get().car_id, car.id)
+
+    def test_public_service_booking_endpoint_saves_customer_request(self):
+        response = self.client.post(
+            '/api/service-bookings/',
+            {
+                'name': 'Customer',
+                'phone': '0712345678',
+                'email': 'customer@example.com',
+                'vehicle': 'Toyota Corolla, KDA 123A',
+                'service': 'minor_service',
+                'preferred_date': None,
+                'notes': 'Please check the brakes.',
+                'website': '',
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(ServiceBooking.objects.count(), 1)
+        booking = ServiceBooking.objects.get()
+        self.assertEqual(booking.name, 'Customer')
+        self.assertEqual(booking.service, 'minor_service')
+        self.assertEqual(response.data['reference'], booking.reference)
+
+    def test_staff_me_returns_authenticated_user_profile(self):
+        user = get_user_model().objects.create_user(
+            username='staff-member',
+            first_name='Staff',
+            last_name='Member',
+        )
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get('/api/staff/me/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['username'], 'staff-member')
+        self.assertEqual(response.data['first_name'], 'Staff')
+        self.assertEqual(response.data['last_name'], 'Member')
+        self.assertEqual(
+            response.data['can'],
+            {'view': False, 'add': False, 'change': False, 'delete': False},
+        )
