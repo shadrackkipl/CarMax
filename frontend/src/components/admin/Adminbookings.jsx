@@ -18,7 +18,7 @@ import {
   inputClass,
   primaryButtonClass,
   secondaryButtonClass,
-} from "./AdminUi";
+} from "./Adminui";
 
 const STATUSES = [
   { id: "new", label: "New", tone: "bg-blue-50 text-blue-700 ring-blue-200" },

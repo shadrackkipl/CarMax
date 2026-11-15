@@ -100,6 +100,7 @@ class StaffCarSerializer(serializers.ModelSerializer):
         queryset=SalesRepresentative.objects.all(),
         source='sales_representatives',
     )
+    is_sold = serializers.SerializerMethodField()
 
     class Meta:
         model = Car
@@ -110,13 +111,17 @@ class StaffCarSerializer(serializers.ModelSerializer):
             'model_code', 'doors', 'seats', 'exterior_color',
             'interior_color', 'transmission', 'fuel_type', 'description',
             'features', 'equipment', 'image', 'images',
-            'sales_representative_ids', 'is_available', 'created_at',
+            'sales_representative_ids', 'is_available', 'is_sold',
+            'created_at',
         ]
         read_only_fields = ['id', 'created_at']
         extra_kwargs = {
             'engine_capacity': {'min_value': 1},
             'drivetrain': {'required': True, 'allow_blank': False},
         }
+
+    def get_is_sold(self, obj):
+        return hasattr(obj, 'sale')
 
 
 class StaffUserSerializer(serializers.ModelSerializer):
@@ -283,7 +288,7 @@ class SaleSerializer(serializers.ModelSerializer):
     )
     balance = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     payment_status = serializers.CharField(read_only=True)
-    created_by_name = serializers.SerializerMethodField()
+    closed_by = serializers.SerializerMethodField()
 
     class Meta:
         model = Sale
@@ -292,18 +297,35 @@ class SaleSerializer(serializers.ModelSerializer):
             'vehicle_details', 'buyer_name', 'buyer_phone', 'buyer_email',
             'buyer_address', 'sale_price', 'amount_paid', 'balance',
             'payment_status', 'payment_method', 'notes', 'sold_at',
-            'created_by_name', 'created_at',
+            'closed_by', 'created_at',
         ]
         read_only_fields = [
             'id', 'invoice_number', 'vehicle_description', 'stock_number',
             'vehicle_details', 'created_at',
         ]
 
-    def get_created_by_name(self, obj):
+    def get_closed_by(self, obj):
+        """Who closed the sale: name and details, kept even if the account is deleted."""
         user = obj.created_by
-        if not user:
-            return ''
-        return user.get_full_name() or user.get_username()
+        if user:
+            return {
+                'id': user.id,
+                'name': user.get_full_name() or user.get_username(),
+                'username': user.get_username(),
+                'email': user.email,
+                'is_admin': user.is_superuser,
+                'is_active': user.is_active,
+            }
+        if obj.closed_by_name:
+            return {
+                'id': None,
+                'name': obj.closed_by_name,
+                'username': obj.closed_by_username,
+                'email': '',
+                'is_admin': False,
+                'is_active': False,
+            }
+        return None
 
     def validate_car(self, value):
         if self.instance is None:
@@ -341,7 +363,12 @@ class SaleSerializer(serializers.ModelSerializer):
         with transaction.atomic():
             validated_data.update(vehicle_snapshot(car))
             if request and request.user.is_authenticated:
-                validated_data['created_by'] = request.user
+                user = request.user
+                validated_data['created_by'] = user
+                validated_data['closed_by_name'] = (
+                    user.get_full_name() or user.get_username()
+                )
+                validated_data['closed_by_username'] = user.get_username()
             sale = super().create(validated_data)
 
             # A sold vehicle must no longer appear on the website

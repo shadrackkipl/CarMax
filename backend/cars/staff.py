@@ -8,6 +8,8 @@ STAFF_GROUP_NAME = "Car Staff"
 STAFF_PERMISSIONS = [
     "view_car", "add_car", "change_car", "delete_car",
     "view_carimage", "add_carimage", "change_carimage", "delete_carimage",
+    # Staff can close a sale (create an invoice) and view the ones they closed
+    "add_sale", "view_sale",
 ]
 
 

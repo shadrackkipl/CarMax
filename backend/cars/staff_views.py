@@ -1,7 +1,7 @@
 # cars/staff_views.py
 from django.db.models import Max
 from django.shortcuts import get_object_or_404
-from rest_framework import permissions, status, viewsets
+from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import (
     action,
     api_view,
@@ -12,8 +12,8 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from .models import Car, CarImage, SalesRepresentative
-from .serializers import CarImageSerializer, StaffCarSerializer
+from .models import Car, CarImage, Sale, SalesRepresentative
+from .serializers import CarImageSerializer, SaleSerializer, StaffCarSerializer
 
 
 class CarStaffPermission(permissions.BasePermission):
@@ -66,9 +66,11 @@ class StaffCarViewSet(viewsets.ModelViewSet):
     }
 
     def get_queryset(self):
-        return Car.objects.prefetch_related(
-            "images", "sales_representatives"
-        ).order_by("-created_at")
+        return (
+            Car.objects.select_related("sale")
+            .prefetch_related("images", "sales_representatives")
+            .order_by("-created_at")
+        )
 
     @action(
         detail=True,
@@ -128,6 +130,8 @@ def staff_me(request):
                 "add": user.has_perm("cars.add_car"),
                 "change": user.has_perm("cars.change_car"),
                 "delete": user.has_perm("cars.delete_car"),
+                "sell": user.has_perm("cars.add_sale"),
+                "view_sales": user.has_perm("cars.view_sale"),
             },
         }
     )
@@ -140,3 +144,55 @@ def staff_sales_reps(request):
     """Names of active sales reps, so staff can assign them to a car."""
     reps = SalesRepresentative.objects.filter(is_active=True).values("id", "name")
     return Response(list(reps))
+
+
+class StaffSalePermission(CarStaffPermission):
+    """Staff may record a sale and view their own sales, nothing more."""
+
+    perms_by_method = {
+        "GET": ["cars.view_sale"],
+        "HEAD": ["cars.view_sale"],
+        "OPTIONS": [],
+        "POST": ["cars.add_sale"],
+    }
+
+
+class StaffSaleViewSet(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
+    """
+    Close a sale (this creates its invoice) and see the invoices you closed.
+    Staff cannot edit or delete an invoice: only the administrator can.
+    """
+
+    serializer_class = SaleSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [StaffSalePermission]
+    http_method_names = ["get", "post", "head", "options"]
+    action_perms = {"sellable_cars": ["cars.add_sale"]}
+
+    def get_queryset(self):
+        # Everyone sees only the sales they closed themselves
+        return Sale.objects.filter(created_by=self.request.user).select_related(
+            "car", "created_by"
+        )
+
+    @action(detail=False, methods=["get"], url_path="sellable-cars")
+    def sellable_cars(self, request):
+        """Vehicles that have not been sold yet, for the "Close a sale" form."""
+        cars = Car.objects.filter(sale__isnull=True).order_by("-created_at")
+        return Response(
+            [
+                {
+                    "id": car.id,
+                    "label": f"{car.year} {car.make} {car.model_name}",
+                    "stock_number": car.stock_number,
+                    "price": str(car.price),
+                    "is_available": car.is_available,
+                }
+                for car in cars
+            ]
+        )

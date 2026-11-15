@@ -7,11 +7,13 @@ import {
   FiDollarSign,
   FiGrid,
   FiEdit2,
+  FiFileText,
   FiEyeOff,
   FiImage,
   FiLogOut,
   FiPackage,
   FiPlus,
+  FiRefreshCw,
   FiSearch,
   FiTrash2,
   FiX,
@@ -44,14 +46,14 @@ const STATUS_TABS = [
 /* ---------- small presentational pieces (kept outside the page component) ---------- */
 
 const StatCard = ({ icon: Icon, label, value, tone }) => (
-  <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+  <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
     <div className="flex items-center justify-between gap-3">
       <p className="text-sm font-medium text-slate-500">{label}</p>
-      <span className={`grid size-9 place-items-center rounded-lg ${tone}`}>
+      <span className={`grid size-10 place-items-center rounded-xl ${tone}`}>
         <Icon aria-hidden="true" className="size-4" />
       </span>
     </div>
-    <p className="mt-3 truncate text-2xl font-semibold tracking-tight text-slate-900">
+    <p className="mt-3 truncate text-[26px] font-semibold tracking-tight text-slate-900">
       {value}
     </p>
   </article>
@@ -161,8 +163,10 @@ const StaffCars = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
   const [busyId, setBusyId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -180,7 +184,7 @@ const StaffCars = () => {
       });
 
     return () => controller.abort();
-  }, []);
+  }, [reloadKey]);
 
   const availableCars = cars.filter((car) => car.is_available);
   const hiddenCount = cars.length - availableCars.length;
@@ -202,7 +206,7 @@ const StaffCars = () => {
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    return cars.filter((car) => {
+    const matches = cars.filter((car) => {
       if (statusFilter === "available" && !car.is_available) return false;
       if (statusFilter === "hidden" && car.is_available) return false;
       if (typeFilter && car.body_type !== typeFilter) return false;
@@ -213,14 +217,26 @@ const StaffCars = () => {
         .toLowerCase()
         .includes(query);
     });
-  }, [cars, search, statusFilter, typeFilter]);
+    const sorters = {
+      newest: (a, b) => Number(b.year || 0) - Number(a.year || 0),
+      oldest: (a, b) => Number(a.year || 0) - Number(b.year || 0),
+      price_low: (a, b) => Number(a.price || 0) - Number(b.price || 0),
+      price_high: (a, b) => Number(b.price || 0) - Number(a.price || 0),
+    };
+    return matches.sort(sorters[sortBy]);
+  }, [cars, search, sortBy, statusFilter, typeFilter]);
 
-  const hasFilters = search !== "" || statusFilter !== "all" || typeFilter !== "";
+  const hasFilters =
+    search !== "" ||
+    statusFilter !== "all" ||
+    typeFilter !== "" ||
+    sortBy !== "newest";
 
   const clearFilters = () => {
     setSearch("");
     setStatusFilter("all");
     setTypeFilter("");
+    setSortBy("newest");
   };
 
   const tabCount = (id) =>
@@ -279,16 +295,16 @@ const StaffCars = () => {
     } the website`;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-[#f5f7fa] text-slate-900">
       {/* Top bar */}
-      <header className="bg-[#1f1f1f] text-white">
-        <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-4 sm:px-7 lg:px-10">
+      <header className="border-b border-white/10  bg-[#1f1f1f] text-white shadow-sm">
+        <div className="mx-auto flex h-[68px] max-w-[1440px] items-center justify-between px-4 sm:px-7 lg:px-10">
           <div className="flex items-center gap-3">
-            <span className="grid size-9 place-items-center rounded-lg bg-white/10">
+            <span className="grid size-10 place-items-center rounded-xl bg-white/10 ring-1 ring-white/10">
               <MdDirectionsCar aria-hidden="true" className="size-5" />
             </span>
             <div className="leading-tight">
-              <p className="text-sm font-semibold">Carmax Motors</p>
+              <p className="text-sm font-semibold tracking-wide">CarMax Motors</p>
               <p className="text-[11px] uppercase tracking-[0.14em] text-white/55">
                 Staff portal
               </p>
@@ -309,6 +325,15 @@ const StaffCars = () => {
                 </p>
               </div>
             </div>
+            {(me.can.sell || me.can.view_sales) && (
+              <Link
+                className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/30"
+                to="/staff/sales"
+              >
+                <FiFileText aria-hidden="true" className="size-4" />
+                <span className="hidden sm:inline">My sales</span>
+              </Link>
+            )}
             {me.is_superuser && (
               <Link
                 className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/30"
@@ -331,22 +356,29 @@ const StaffCars = () => {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1400px] px-4 py-8 sm:px-7 lg:px-10">
+      <main className="mx-auto max-w-[1440px] px-4 py-8 sm:px-7 lg:px-10">
         {/* Page heading */}
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div  className="relative isolate flex flex-col justify-between gap-5 overflow-hidden rounded-3xl bg-gradient-to-br from-[#07365f] via-[#075084] to-[#0875a5] px-6 py-7 text-white shadow-[0_16px_40px_rgba(7,54,95,0.18)] sm:flex-row sm:items-center sm:px-8 sm:py-8">
+        <div aria-hidden="true" className="absolute -right-10 -top-20 -z-10 size-72 rounded-full border-[36px] border-white/[0.06]" />
+        <div aria-hidden="true" className="absolute -bottom-28 right-36 -z-10 size-56 rounded-full border-[28px] border-white/[0.05]" />
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.08] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-sky-100">
+            <span aria-hidden="true" className="size-1.5 rounded-full bg-white" />          
+              Staff workspace <span className="mx-1.5 text-white-300">/</span> Inventory
+            </p>
+            <h1 className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">
               Vehicle inventory
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Add, update and manage the vehicles shown on the website.
+            <p className="mt-2 max-w-xl text-sm leading-6 text-sky-50/75">
+              Keep your showroom up to date. Manage listings, visibility and pricing from one place.
             </p>
           </div>
           {me.can.add && (
             <Link
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#1f1f1f] px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-black focus:outline-none focus:ring-4 focus:ring-slate-900/15"
-              to="/staff/cars/new"
-            >
+              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-[#07365f] shadow-sm transition hover:-translate-y-0.5 hover:bg-sky-50 focus:outline-none focus:ring-4 focus:ring-white/30"
+          to="/staff/cars/new"
+        >
+            
               <FiPlus aria-hidden="true" className="size-4" />
               Add vehicle
             </Link>
@@ -356,7 +388,7 @@ const StaffCars = () => {
         {/* Summary */}
         <section
           aria-label="Inventory summary"
-          className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+          className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
         >
           <StatCard icon={FiPackage} label="Total vehicles" tone="bg-slate-100 text-slate-700" value={formatNumber(cars.length)} />
           <StatCard icon={FiCheckCircle} label="Available online" tone="bg-emerald-50 text-emerald-700" value={formatNumber(availableCars.length)} />
@@ -366,16 +398,30 @@ const StaffCars = () => {
 
         {/* Messages */}
         {error && (
-          <div className="mt-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+          <div className="mt-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
             <FiAlertCircle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
             <p className="flex-1">{error}</p>
+            {cars.length === 0 && (
+              <button
+                className="inline-flex shrink-0 items-center gap-1.5 font-semibold hover:text-red-950"
+                onClick={() => {
+                  setError("");
+                  setLoading(true);
+                  setReloadKey((key) => key + 1);
+                }}
+                type="button"
+              >
+                <FiRefreshCw aria-hidden="true" className="size-3.5" />
+                Retry
+              </button>
+            )}
             <button aria-label="Dismiss" onClick={() => setError("")} type="button">
               <FiX aria-hidden="true" className="size-4" />
             </button>
           </div>
         )}
         {notice && (
-          <div className="mt-6 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
+          <div className="mt-5 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
             <FiCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
             <p className="flex-1">{notice}</p>
             <button aria-label="Dismiss" onClick={() => setNotice("")} type="button">
@@ -385,12 +431,12 @@ const StaffCars = () => {
         )}
 
         {/* Inventory */}
-        <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-col gap-4 border-b border-slate-100 p-4 sm:p-5">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div
                 aria-label="Filter by status"
-                className="inline-flex w-full rounded-lg bg-slate-100 p-1 lg:w-auto"
+                className="inline-flex w-full rounded-xl bg-slate-100 p-1 lg:w-auto"
                 role="tablist"
               >
                 {STATUS_TABS.map((tab) => (
@@ -398,7 +444,7 @@ const StaffCars = () => {
                     aria-selected={statusFilter === tab.id}
                     className={`flex-1 rounded-md px-4 py-1.5 text-sm font-medium transition lg:flex-none ${
                       statusFilter === tab.id
-                        ? "bg-white text-slate-900 shadow-sm"
+                        ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/70"
                         : "text-slate-500 hover:text-slate-800"
                     }`}
                     key={tab.id}
@@ -417,7 +463,7 @@ const StaffCars = () => {
                   <FiSearch aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                   <input
                     aria-label="Search vehicles"
-                    className="min-h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-9 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-900/5"
+                    className="min-h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-9 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-900/5"
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Search make, model, year or stock no."
                     value={search}
@@ -434,19 +480,32 @@ const StaffCars = () => {
                   )}
                 </label>
 
-                <select
-                  aria-label="Filter by car type"
-                  className="min-h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-900/5"
-                  onChange={(event) => setTypeFilter(event.target.value)}
-                  value={typeFilter}
-                >
-                  <option value="">All car types</option>
-                  {bodyTypes.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <select
+                    aria-label="Filter by car type"
+                    className="min-h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-900/5"
+                    onChange={(event) => setTypeFilter(event.target.value)}
+                    value={typeFilter}
+                  >
+                    <option value="">All car types</option>
+                    {bodyTypes.map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    aria-label="Sort vehicles"
+                    className="min-h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-slate-400 focus:bg-white focus:ring-4 focus:ring-slate-900/5"
+                    onChange={(event) => setSortBy(event.target.value)}
+                    value={sortBy}
+                  >
+                    <option value="newest">Year: newest</option>
+                    <option value="oldest">Year: oldest</option>
+                    <option value="price_low">Price: low to high</option>
+                    <option value="price_high">Price: high to low</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -522,8 +581,23 @@ const StaffCars = () => {
                           </div>
                         </div>
                       </div>
-                      {(me.can.change || me.can.delete) && (
+                      {(me.can.change || me.can.delete || me.can.sell) && (
                         <div className="mt-4 flex gap-2">
+                          {car.is_sold ? (
+                            <span className="inline-flex min-h-10 flex-1 items-center justify-center rounded-lg bg-slate-100 text-sm font-semibold text-slate-600">
+                              Sold
+                            </span>
+                          ) : (
+                            me.can.sell && (
+                              <Link
+                                className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-emerald-200 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
+                                to={`/staff/sales?sell=${car.id}`}
+                              >
+                                <FiFileText aria-hidden="true" className="size-4" />
+                                Mark as sold
+                              </Link>
+                            )
+                          )}
                           {me.can.change && (
                             <Link
                               className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50"
@@ -595,7 +669,23 @@ const StaffCars = () => {
                             />
                           </td>
                           <td className="px-6 py-3.5">
-                            <div className="flex justify-end gap-2">
+                            <div className="flex items-center justify-end gap-2">
+                              {car.is_sold ? (
+                                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                                  Sold
+                                </span>
+                              ) : (
+                                me.can.sell && (
+                                  <Link
+                                    aria-label={`Mark ${carName(car)} as sold`}
+                                    className="grid size-9 place-items-center rounded-lg border border-emerald-200 text-emerald-700 transition hover:bg-emerald-50"
+                                    title="Mark as sold and create an invoice"
+                                    to={`/staff/sales?sell=${car.id}`}
+                                  >
+                                    <FiFileText aria-hidden="true" className="size-4" />
+                                  </Link>
+                                )
+                              )}
                               {me.can.change && (
                                 <Link
                                   aria-label={`Edit ${carName(car)}`}
@@ -647,7 +737,7 @@ const StaffCars = () => {
         </section>
 
         <footer className="py-6 text-center text-xs text-slate-400">
-          Carmax Motors staff workspace
+          CarMax Motors staff workspace
         </footer>
       </main>
 

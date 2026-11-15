@@ -1,15 +1,15 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import StaffRoute from "../components/staff/StaffRoute";
-import AdminLayout from "../components/admin/AdminLayout";
-import AdminDashboard from "../components/admin/AdminDashboard";
-import AdminStaff from "../components/admin/AdminStaff";
-import AdminSalesReps from "../components/admin/AdminSalesReps";
+import StaffRoute from "../components/staff/Staffroute";
+import AdminLayout from "../components/admin/Adminlayout";
+import AdminDashboard from "../components/admin/Admindashboard";
+import AdminStaff from "../components/admin/Adminstaff";
+import AdminSalesReps from "../components/admin/Adminsalesreps";
 import AdminInquiries from "../components/admin/AdminInquiries";
 import AdminSales from "../components/admin/AdminSales";
 import AdminInvoice from "../components/admin/AdminInvoice";
-import AdminAnnouncements from "../components/admin/AdminAnnouncements";
-import AdminSlides from "../components/admin/AdminSlides";
-import AdminBookings from "../components/admin/AdminBookings";
+import AdminAnnouncements from "../components/admin/Adminannouncements";
+import AdminSlides from "../components/admin/Adminslides";
+import AdminBookings from "../components/admin/Adminbookings";
 
 /**
  * Main page of the admin panel. App.jsx mounts it at /admin-panel/*, so the

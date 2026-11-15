@@ -185,7 +185,7 @@ class InquiryAdmin(ModelAdmin):
 class SaleAdmin(ModelAdmin):
     list_display = (
         'invoice_number', 'vehicle_description', 'buyer_name',
-        'sale_price', 'amount_paid', 'sold_at',
+        'sale_price', 'amount_paid', 'closed_by_name', 'sold_at',
     )
     search_fields = ('invoice_number', 'buyer_name', 'vehicle_description')
     readonly_fields = ('invoice_number', 'created_at')

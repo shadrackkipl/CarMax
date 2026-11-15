@@ -105,12 +105,12 @@ const SECTIONS = [
 ];
 
 const inputClass =
-  "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-slate-500 focus:ring-4 focus:ring-slate-100";
+  "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#1f1f1f] focus:ring-4 focus:ring-black/5";
 const inputErrorClass =
   "border-red-300 hover:border-red-400 focus:border-red-500 focus:ring-red-100";
 
 const sectionClass =
-  "grid scroll-mt-24 gap-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-2 sm:p-7";
+  "grid scroll-mt-24 gap-5 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_8px_rgba(15,23,42,0.035)] sm:grid-cols-2 sm:p-7";
 
 const formatNumber = (value) => Number(value || 0).toLocaleString("en-KE");
 
@@ -166,7 +166,7 @@ const Field = ({ label, name, children, hint, required, className = "" }) => {
 
 const SectionHeading = ({ icon: Icon, number, title, description }) => (
   <div className="flex items-start gap-3 sm:col-span-2">
-    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-900 text-white">
+    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 text-white shadow-sm">
       <Icon aria-hidden="true" className="h-5 w-5" />
     </span>
     <div className="min-w-0 flex-1">
@@ -193,9 +193,9 @@ const DropZone = ({ multiple = false, onFiles, title, subtitle, ariaLabel }) => 
   return (
     <div
       aria-label={ariaLabel}
-      className={`flex min-h-32 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed px-4 py-6 text-center transition focus:outline-none focus:ring-4 focus:ring-slate-200 ${
+      className={`flex min-h-32 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed px-4 py-6 text-center transition focus:outline-none focus:ring-4 focus:ring-black/10 ${
         dragging
-          ? "border-slate-900 bg-slate-100"
+          ? "border-[#1f1f1f] bg-slate-100"
           : "border-slate-300 bg-slate-50 hover:border-slate-400 hover:bg-slate-100"
       }`}
       onClick={() => inputRef.current?.click()}
@@ -244,8 +244,8 @@ const Switch = ({ checked, onChange, label }) => (
   <button
     aria-checked={checked}
     aria-label={label}
-    className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition focus:outline-none focus:ring-4 focus:ring-slate-200 ${
-      checked ? "bg-red-500" : "bg-slate-300"
+    className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition focus:outline-none focus:ring-4 focus:ring-emerald-100 ${
+      checked ? "bg-emerald-600" : "bg-slate-300"
     }`}
     onClick={() => onChange(!checked)}
     role="switch"
@@ -281,13 +281,13 @@ const PreviewCard = ({ form, coverSrc, repNames }) => {
             <FiImage aria-hidden="true" className="h-8 w-8" />
           </div>
         )}
-        <span className="absolute left-3 top-3 rounded-md bg-slate-900/85 px-2 py-1 text-[11px] font-semibold text-white">
+        <span className="absolute left-3 top-3 rounded-md bg-blue-600/90 px-2 py-1 text-[11px] font-semibold text-white">
           {form.condition}
         </span>
         <span
           className={`absolute right-3 top-3 rounded-md px-2 py-1 text-[11px] font-semibold ${
             form.is_available
-              ? "bg-red-500 text-white"
+              ? "bg-emerald-600 text-white"
               : "bg-white/90 text-slate-600"
           }`}
         >
@@ -709,8 +709,8 @@ const StaffCarForm = () => {
   if (!allowed) {
     return (
       <main className="grid min-h-[60vh] place-items-center bg-slate-50 px-4">
-        <div className="max-w-sm rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-500">
+        <div className="max-w-sm rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-[0_12px_28px_rgba(15,23,42,0.08)]">
+          <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-slate-600">
             <FiLock aria-hidden="true" className="h-5 w-5" />
           </span>
           <h1 className="mt-4 font-semibold text-slate-900">Access restricted</h1>
@@ -718,7 +718,7 @@ const StaffCarForm = () => {
             Your account does not have permission to do this.
           </p>
           <Link
-            className="mt-5 inline-flex min-h-10 items-center justify-center rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-700"
+            className="mt-5 inline-flex min-h-10 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-black focus:outline-none focus:ring-4 focus:ring-black/10"
             to="/staff/cars"
           >
             Back to vehicles
@@ -749,10 +749,10 @@ const StaffCarForm = () => {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 pb-28">
+    <main className="min-h-screen bg-[#f7f7f8] pb-28">
       <div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8">
         <Link
-          className="group inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-slate-900"
+          className="group inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition hover:text-[#1f1f1f]"
           onClick={confirmLeave}
           to="/staff/cars"
         >
@@ -763,22 +763,23 @@ const StaffCarForm = () => {
           Back to vehicles
         </Link>
 
-        <header className="mt-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+        <header className="relative isolate flex flex-col justify-between gap-5 overflow-hidden rounded-3xl bg-gradient-to-br from-[#07365f] via-[#075084] to-[#0875a5] px-6 py-7 text-white shadow-[0_16px_40px_rgba(7,54,95,0.18)] sm:flex-row sm:items-center sm:px-8 sm:py-8">
+          <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-20 size-56 rounded-full border-[28px] border-white/[0.05]" />
+          <div className="relative z-10">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/60">
               Vehicle inventory
             </p>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+            <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
               {isEdit ? "Edit vehicle" : "Add a vehicle"}
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500 sm:text-base">
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/70 sm:text-base">
               {isEdit
                 ? "Update the listing details, specifications, and photos."
                 : "Fill in the details below. The preview updates as you type."}
             </p>
           </div>
-          <span className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 shadow-sm">
-            <span className="h-2 w-2 rounded-full bg-red-500" />
+          <span className="relative z-10 inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-white/15 bg-white/[0.08] px-3.5 py-2 text-xs font-semibold text-white/85">
+            <span className="h-2 w-2 rounded-full bg-white/40" />
             Staff workspace
           </span>
         </header>
@@ -786,7 +787,7 @@ const StaffCarForm = () => {
         {/* Section navigation */}
         <nav
           aria-label="Form sections"
-          className="sticky top-0 z-20 -mx-4 mt-6 border-b border-slate-200 bg-slate-50/90 px-4 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
+          className="sticky top-0 z-20 -mx-4 mt-6 border-b border-slate-200 bg-[#f7f7f8]/90 px-4 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
         >
           <ul className="flex gap-1 overflow-x-auto py-2">
             {SECTIONS.map(([sectionId, label]) => {
@@ -798,8 +799,8 @@ const StaffCarForm = () => {
                     aria-current={active ? "true" : undefined}
                     className={`inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition ${
                       active
-                        ? "bg-blue-900 text-white shadow-sm"
-                        : "text-slate-600 hover:bg-white hover:text-slate-900"
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "text-slate-600 hover:bg-white hover:text-[#1f1f1f]"
                     }`}
                     onClick={() => goToSection(sectionId)}
                     type="button"
@@ -1110,7 +1111,7 @@ const StaffCarForm = () => {
                           onChange={() => toggleRep(rep.id)}
                           type="checkbox"
                         />
-                        <span className="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 peer-checked:border-slate-900 peer-checked:bg-slate-50 peer-focus-visible:ring-4 peer-focus-visible:ring-slate-200">
+                        <span className="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 peer-checked:border-[#1f1f1f] peer-checked:bg-slate-50 peer-focus-visible:ring-4 peer-focus-visible:ring-black/10">
                           <span className="grid h-8 w-8 place-items-center rounded-full bg-slate-200 text-xs font-bold text-slate-600">
                             {rep.name
                               .split(" ")
@@ -1121,7 +1122,7 @@ const StaffCarForm = () => {
                           </span>
                           <span className="flex-1">{rep.name}</span>
                           {repIds.includes(rep.id) && (
-                            <FiCheckCircle aria-hidden="true" className="h-4 w-4 text-slate-900" />
+                            <FiCheckCircle aria-hidden="true" className="h-4 w-4 text-emerald-600" />
                           )}
                         </span>
                       </label>
@@ -1181,7 +1182,7 @@ const StaffCarForm = () => {
               >
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${
-                    progress === 100 ? "bg-red-500" : "bg-slate-900"
+                    progress === 100 ? "bg-emerald-500" : "bg-blue-600"
                   }`}
                   style={{ width: `${progress}%` }}
                 />
@@ -1195,7 +1196,7 @@ const StaffCarForm = () => {
                       type="button"
                     >
                       {item.done ? (
-                        <FiCheckCircle aria-hidden="true" className="h-4 w-4 shrink-0 text-red-500" />
+                        <FiCheckCircle aria-hidden="true" className="h-4 w-4 shrink-0 text-emerald-600" />
                       ) : (
                         <FiCircle aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-300" />
                       )}
@@ -1226,7 +1227,9 @@ const StaffCarForm = () => {
         <div className="mx-auto flex max-w-7xl flex-col-reverse gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <p aria-live="polite" className="flex items-center gap-2 text-sm text-slate-500">
             <span
-              className={`h-2 w-2 rounded-full ${dirty ? "bg-amber-500" : "bg-red-500"}`}
+              className={`h-2 w-2 rounded-full ${
+                dirty ? "bg-amber-500" : isEdit ? "bg-emerald-500" : "bg-slate-400"
+              }`}
             />
             {dirty
               ? "You have unsaved changes"
@@ -1247,7 +1250,7 @@ const StaffCarForm = () => {
               Cancel
             </Link>
             <button
-              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-slate-200 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
+              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-black focus:outline-none focus:ring-4 focus:ring-black/10 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
               disabled={saving}
               form="vehicle-form"
               type="submit"

@@ -16,7 +16,7 @@ import {
 } from "react-icons/fi";
 import { MdDirectionsCar } from "react-icons/md";
 import { adminApi } from "../staff/Staffapi";
-import { useStaff } from "../staff/StaffRoute";
+import { useStaff } from "../staff/Staffroute";
 
 const NAV = [
   { to: "/admin-panel", label: "Dashboard", icon: FiGrid, end: true },
@@ -64,9 +64,9 @@ const AdminLayout = () => {
     .find(({ to, end }) => (end ? pathname === to : pathname.startsWith(to)));
 
   const sidebar = (
-    <div className="flex h-full flex-col bg-[#10263f] text-white">
+    <div className="flex h-full flex-col bg-[#1f1f1f] text-white">
       <div className="flex h-20 items-center gap-3 border-b border-white/10 px-5">
-        <span className="grid size-10 place-items-center rounded-xl bg-sky-400/15 text-sky-300 ring-1 ring-inset ring-white/10">
+        <span className="grid size-10 place-items-center rounded-xl bg-white/10 ring-1 ring-inset ring-white/10">
           <MdDirectionsCar aria-hidden="true" className="size-6" />
         </span>
         <div className="leading-tight">
@@ -83,8 +83,8 @@ const AdminLayout = () => {
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
                 isActive
-                  ? "bg-sky-400/15 text-white ring-1 ring-inset ring-sky-300/20"
-                  : "text-slate-300/80 hover:bg-white/[0.07] hover:text-white"
+                  ? "bg-white/15 text-white ring-1 ring-inset ring-white/10"
+                  : "text-white/65 hover:bg-white/10 hover:text-white"
               }`
             }
             end={end}
@@ -108,7 +108,7 @@ const AdminLayout = () => {
 
       <div className="border-t border-white/10 p-4">
         <div className="flex items-center gap-3">
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sky-400/15 text-xs font-semibold text-sky-200 ring-1 ring-inset ring-white/10">
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white/15 text-xs font-semibold ring-1 ring-inset ring-white/10">
             {getInitials(me)}
           </span>
           <div className="min-w-0 leading-tight">
@@ -129,7 +129,7 @@ const AdminLayout = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#f4f7fb] text-slate-900">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 lg:block">{sidebar}</aside>
 
@@ -170,7 +170,7 @@ const AdminLayout = () => {
             </p>
           </div>
           <Link
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-600/20"
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/15"
             to="/"
           >
             <span className="hidden sm:inline">View website</span>

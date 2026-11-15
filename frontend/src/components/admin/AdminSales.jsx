@@ -85,6 +85,7 @@ const AdminSales = () => {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [search, setSearch] = useState("");
+  const [closedBy, setClosedBy] = useState("all");
 
   const [editing, setEditing] = useState(null); // null | "new" | sale
   const [form, setForm] = useState(EMPTY_FORM);
@@ -258,16 +259,41 @@ const AdminSales = () => {
     }
   };
 
+  // One entry per person who closed sales (kept by name if their account was deleted)
+  const personKey = (sale) =>
+    sale.closed_by ? String(sale.closed_by.id ?? `name:${sale.closed_by.name}`) : "none";
+
+  const people = useMemo(() => {
+    const map = new Map();
+    sales.forEach((sale) => {
+      const key = personKey(sale);
+      const person = sale.closed_by || { name: "Unknown", username: "", email: "" };
+      const entry = map.get(key) || { key, person, count: 0, revenue: 0 };
+      entry.count += 1;
+      entry.revenue += Number(sale.sale_price);
+      map.set(key, entry);
+    });
+    return [...map.values()].sort((a, b) => b.revenue - a.revenue);
+  }, [sales]);
+
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return sales;
-    return sales.filter((sale) =>
-      [sale.invoice_number, sale.buyer_name, sale.vehicle_description, sale.stock_number]
+    return sales.filter((sale) => {
+      if (closedBy !== "all" && personKey(sale) !== closedBy) return false;
+      if (!query) return true;
+      return [
+        sale.invoice_number,
+        sale.buyer_name,
+        sale.vehicle_description,
+        sale.stock_number,
+        sale.closed_by?.name,
+        sale.closed_by?.username,
+      ]
         .join(" ")
         .toLowerCase()
-        .includes(query)
-    );
-  }, [sales, search]);
+        .includes(query);
+    });
+  }, [sales, search, closedBy]);
 
   const revenue = sales.reduce((total, sale) => total + Number(sale.sale_price), 0);
   const outstanding = sales.reduce((total, sale) => total + Number(sale.balance), 0);
@@ -299,10 +325,59 @@ const AdminSales = () => {
         <StatCard icon={FiDollarSign} label="Balance still owed" tone="bg-amber-50 text-amber-700" value={money(outstanding)} />
       </section>
 
+      {people.length > 0 && (
+        <section aria-label="Sales by person" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-900">Who closed the sales</h2>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {people.map((entry) => (
+              <li key={entry.key}>
+                <button
+                  aria-pressed={closedBy === entry.key}
+                  className={`w-full rounded-xl border p-4 text-left transition ${
+                    closedBy === entry.key
+                      ? "border-slate-900 bg-slate-50"
+                      : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                  }`}
+                  onClick={() => setClosedBy(closedBy === entry.key ? "all" : entry.key)}
+                  type="button"
+                >
+                  <span className="block truncate text-sm font-semibold text-slate-900">
+                    {entry.person.name}
+                    {entry.person.is_admin ? " (Administrator)" : ""}
+                  </span>
+                  <span className="block truncate text-xs text-slate-500">
+                    {[entry.person.username && `@${entry.person.username}`, entry.person.email]
+                      .filter(Boolean)
+                      .join(" · ") || "No details"}
+                    {entry.person.id === null && " · account removed"}
+                  </span>
+                  <span className="mt-2 flex items-baseline justify-between gap-2">
+                    <span className="text-sm text-slate-600">
+                      {entry.count} {entry.count === 1 ? "sale" : "sales"}
+                    </span>
+                    <span className="text-sm font-bold text-slate-900">{money(entry.revenue)}</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-slate-400">Click a person to see only the invoices they closed.</p>
+        </section>
+      )}
+
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <p className="text-sm text-slate-500">
-            {sales.length} {sales.length === 1 ? "sale" : "sales"}
+            {filtered.length} {filtered.length === 1 ? "sale" : "sales"}
+            {closedBy !== "all" && (
+              <button
+                className="ml-3 font-semibold text-slate-700 underline"
+                onClick={() => setClosedBy("all")}
+                type="button"
+              >
+                Show everyone
+              </button>
+            )}
           </p>
           <label className="relative block sm:w-72">
             <FiSearch aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
@@ -337,12 +412,13 @@ const AdminSales = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] text-left text-sm">
+            <table className="w-full min-w-[980px] text-left text-sm">
               <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                 <tr>
                   <th className="px-6 py-3" scope="col">Invoice</th>
                   <th className="px-4 py-3" scope="col">Vehicle</th>
                   <th className="px-4 py-3" scope="col">Buyer</th>
+                  <th className="px-4 py-3" scope="col">Closed by</th>
                   <th className="px-4 py-3" scope="col">Total</th>
                   <th className="px-4 py-3" scope="col">Balance</th>
                   <th className="px-4 py-3" scope="col">Payment</th>
@@ -365,6 +441,21 @@ const AdminSales = () => {
                       <p className="text-xs text-slate-500">{sale.stock_number}</p>
                     </td>
                     <td className="px-4 py-3.5 text-slate-600">{sale.buyer_name}</td>
+                    <td className="px-4 py-3.5">
+                      {sale.closed_by ? (
+                        <>
+                          <p className="font-medium text-slate-900">
+                            {sale.closed_by.name}
+                            {sale.closed_by.is_admin && <span className="ml-1 text-xs font-normal text-slate-400">(Admin)</span>}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {sale.closed_by.email || (sale.closed_by.username ? `@${sale.closed_by.username}` : "")}
+                          </p>
+                        </>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3.5 font-semibold text-slate-900">{money(sale.sale_price)}</td>
                     <td className="px-4 py-3.5 text-slate-600">{money(sale.balance)}</td>
                     <td className="px-4 py-3.5"><PaymentBadge status={sale.payment_status} /></td>

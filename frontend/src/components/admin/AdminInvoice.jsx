@@ -7,7 +7,7 @@ import CarMaxLogo from "../../assets/CarmaxLogo.png";
 // Edit these once: they appear at the top of every invoice.
 // Anything left empty is simply not shown.
 const COMPANY = {
-  name: "Carmax Motors",
+  name: "CarMax Motors",
   address: "",
   phone: "",
   email: "",
@@ -37,7 +37,14 @@ const money = (value) =>
 const formatDate = (value) =>
   new Date(value).toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" });
 
-const AdminInvoice = () => {
+/**
+ * Printable invoice. Used by the admin panel and, with other props, by the
+ * staff panel:
+ * - api: the axios client to load the invoice with
+ * - backPath: where "Back" goes
+ * - canEdit: show the "Edit or record payment" button (administrator only)
+ */
+const AdminInvoice = ({ api = adminApi, backPath = "/admin-panel/sales", canEdit = true }) => {
   const { id } = useParams();
   const [sale, setSale] = useState(null);
   const [error, setError] = useState("");
@@ -45,7 +52,7 @@ const AdminInvoice = () => {
   useEffect(() => {
     const controller = new AbortController();
 
-    adminApi
+    api
       .get(`/sales/${id}/`, { signal: controller.signal })
       .then(({ data }) => setSale(data))
       .catch((requestError) => {
@@ -65,7 +72,7 @@ const AdminInvoice = () => {
       <main className="grid min-h-[60vh] place-items-center bg-slate-50 px-4 text-center">
         <div>
           <p className="text-slate-600">{error}</p>
-          <Link className="mt-4 inline-block text-sm font-semibold text-slate-900 underline" to="/admin-panel/sales">
+          <Link className="mt-4 inline-block text-sm font-semibold text-slate-900 underline" to={backPath}>
             Back to sales
           </Link>
         </div>
@@ -101,19 +108,21 @@ const AdminInvoice = () => {
       <div className="mx-auto mb-5 flex max-w-3xl flex-wrap items-center justify-between gap-3 print:hidden">
         <Link
           className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900"
-          to="/admin-panel/sales"
+          to={backPath}
         >
           <FiArrowLeft aria-hidden="true" className="size-4" />
           Back to sales
         </Link>
         <div className="flex flex-wrap gap-2">
-          <Link
-            className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-            to="/admin-panel/sales"
-          >
-            <FiEdit2 aria-hidden="true" className="size-4" />
-            Edit or record payment
-          </Link>
+          {canEdit && (
+            <Link
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              to={backPath}
+            >
+              <FiEdit2 aria-hidden="true" className="size-4" />
+              Edit or record payment
+            </Link>
+          )}
           {emailLink && (
             <a
               className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
@@ -134,6 +143,19 @@ const AdminInvoice = () => {
           </button>
         </div>
       </div>
+
+      {sale.closed_by && (
+        <div className="mx-auto mb-5 flex max-w-3xl flex-wrap items-center gap-x-6 gap-y-1 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm print:hidden">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Closed by</span>
+          <span className="font-semibold text-slate-900">
+            {sale.closed_by.name}
+            {sale.closed_by.is_admin ? " (Administrator)" : ""}
+          </span>
+          {sale.closed_by.username && <span className="text-slate-500">@{sale.closed_by.username}</span>}
+          {sale.closed_by.email && <span className="text-slate-500">{sale.closed_by.email}</span>}
+          {sale.closed_by.id === null && <span className="text-xs text-amber-700">This account no longer exists</span>}
+        </div>
+      )}
 
       {/* The invoice itself */}
       <article className="mx-auto max-w-3xl bg-white p-8 shadow-sm sm:p-12 print:max-w-none print:p-0 print:shadow-none">
@@ -173,8 +195,8 @@ const AdminInvoice = () => {
             <p className="mt-2 text-sm text-slate-700">
               Method: <span className="font-semibold">{PAYMENT_LABELS[sale.payment_method] || sale.payment_method}</span>
             </p>
-            {sale.created_by_name && (
-              <p className="text-sm text-slate-500">Prepared by {sale.created_by_name}</p>
+            {sale.closed_by && (
+              <p className="text-sm text-slate-500">Prepared by {sale.closed_by.name}</p>
             )}
           </div>
         </section>

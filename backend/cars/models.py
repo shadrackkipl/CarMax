@@ -243,6 +243,10 @@ class Sale(models.Model):
         on_delete=models.SET_NULL,
         related_name="sales_recorded",
     )
+    # Copied when the sale is recorded, so the invoice still shows who closed
+    # it even if that account is deleted later
+    closed_by_name = models.CharField(max_length=150, blank=True, default="")
+    closed_by_username = models.CharField(max_length=150, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
